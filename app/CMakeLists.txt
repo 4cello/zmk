@@ -98,6 +98,10 @@ target_sources_ifdef(CONFIG_ZMK_BACKLIGHT app PRIVATE src/backlight.c)
 target_sources_ifdef(CONFIG_ZMK_LOW_PRIORITY_WORK_QUEUE app PRIVATE src/workqueue.c)
 target_sources(app PRIVATE src/main.c)
 
+target_sources_ifdef(CONFIG_SHIELD_XIAOFOOTSWITCH app PRIVATE boards/shields/xiao_footswitch/bluetooth_name.c)
+target_sources_ifdef(CONFIG_SHIELD_XIAOFOOTSWITCH app PRIVATE boards/shields/xiao_footswitch/led_control.c)
+target_sources_ifdef(CONFIG_SHIELD_XIAOFOOTSWITCH app PRIVATE boards/shields/xiao_footswitch/led_worker.c)
+
 add_subdirectory(src/display/)
 add_subdirectory_ifdef(CONFIG_SETTINGS src/settings/)
 
