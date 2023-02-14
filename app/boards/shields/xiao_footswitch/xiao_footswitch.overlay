@@ -1,15 +1,15 @@
 #include <dt-bindings/zmk/matrix_transform.h>
 
 // Pinout
-#define GPIO_PEDAL 10
-#define GPIO_BLUETOOTH 0
-#define GPIO_LAYER1 9
-#define GPIO_LAYER2 8
-#define GPIO_LAYER3 7
+#define GPIO_PEDAL 3
+#define GPIO_BLUETOOTH 10
+#define GPIO_LAYER1 4
+#define GPIO_LAYER2 5
+#define GPIO_LAYER3 6
 
-#define GPIO_LEDR 2
-#define GPIO_LEDG 3
-#define GPIO_LEDB 4
+#define GPIO_LEDR 7
+#define GPIO_LEDG 8
+#define GPIO_LEDB 9
 
 / {
     chosen {
@@ -53,7 +53,7 @@
     // direct kscan needs a matrix transform, apparently. 
     default_transform: matrix_transform {
         compatible = "zmk,matrix-transform";
-        rows = <3>;
+        rows = <5>;
         columns = <1>;
         map = <
             RC(0,0)
