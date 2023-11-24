@@ -40,7 +40,7 @@
 #define L7_TAP      B
 
 #define TURBO_TIME_BETWEEN_PRESS 500
-#define HOLD_TIME 150
+#define HOLD_TIME 300
 
 &mt {
     tapping-term-ms = <HOLD_TIME>;

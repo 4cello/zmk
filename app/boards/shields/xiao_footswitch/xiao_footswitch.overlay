@@ -1,15 +1,15 @@
 #include <dt-bindings/zmk/matrix_transform.h>
 
 // Pinout
-#define GPIO_PEDAL 3
-#define GPIO_BLUETOOTH 10
-#define GPIO_LAYER1 4
-#define GPIO_LAYER2 5
-#define GPIO_LAYER3 6
+#define GPIO_PEDAL 2
+#define GPIO_BLUETOOTH 1
+#define GPIO_LAYER1 5
+#define GPIO_LAYER2 4
+#define GPIO_LAYER3 3
 
-#define GPIO_LEDR 7
-#define GPIO_LEDG 8
-#define GPIO_LEDB 9
+#define GPIO_LEDR 8
+#define GPIO_LEDG 9
+#define GPIO_LEDB 10
 
 / {
     chosen {
