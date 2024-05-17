@@ -23,6 +23,8 @@
 
 #include <drivers/hwinfo.h>
 
+#include <drivers/hwinfo.h>
+
 #if IS_ENABLED(CONFIG_SETTINGS)
 
 #include <zephyr/settings/settings.h>

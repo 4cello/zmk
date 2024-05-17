@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "."
+		},
+		{
+			"path": "../../../build/zephyr"
 		}
 	],
 	"settings": {

@@ -19,7 +19,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /**
  * LED Code is a slightly adapted version of ergodone's.
  * https://github.com/ergodone/zmk/tree/kinesisble/app/boards/shields/kinesisble
-*/
+ */
 
 #define LED_R_NODE DT_NODELABEL(ledr)
 #define LED_G_NODE DT_NODELABEL(ledg)
@@ -52,14 +52,13 @@ struct led leds[] = {[LED_R] =
                              .gpio_pin = DT_GPIO_PIN(LED_G_NODE, gpios),
                              .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_G_NODE, gpios),
                          },
-                     [LED_B] =
-                         {
-                             .gpio_dev = NULL,
-                             .gpio_dev_name = DT_GPIO_LABEL(LED_B_NODE, gpios),
-                             .gpio_pin_name = DT_LABEL(LED_B_NODE),
-                             .gpio_pin = DT_GPIO_PIN(LED_B_NODE, gpios),
-                             .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_B_NODE, gpios),
-                         }};
+                     [LED_B] = {
+                         .gpio_dev = NULL,
+                         .gpio_dev_name = DT_GPIO_LABEL(LED_B_NODE, gpios),
+                         .gpio_pin_name = DT_LABEL(LED_B_NODE),
+                         .gpio_pin = DT_GPIO_PIN(LED_B_NODE, gpios),
+                         .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_B_NODE, gpios),
+                     }};
 
 static int led_init(const struct device *dev) {
     LOG_DBG("Initializing LEDs");
@@ -97,23 +96,23 @@ static void led_all_OFF() {
 
 void display_profile(uint8_t profile) {
     switch (profile) {
-        case 0:
-            ledON(&leds[0]);
-            break;
-        case 1:
-            ledON(&leds[1]);
-            break;
-        case 2:
-            ledON(&leds[2]);
-            break;
-        case 3:
-            ledON(&leds[0]);
-            ledON(&leds[1]);
-            break;
-        case 4:
-            ledON(&leds[1]);
-            ledON(&leds[2]);W
-            break;
+    case 0:
+        ledON(&leds[0]);
+        break;
+    case 1:
+        ledON(&leds[1]);
+        break;
+    case 2:
+        ledON(&leds[2]);
+        break;
+    case 3:
+        ledON(&leds[0]);
+        ledON(&leds[1]);
+        break;
+    case 4:
+        ledON(&leds[1]);
+        ledON(&leds[2]);
+        break;
     }
     k_msleep(LEVEL_LED_SLEEP_PERIOD);
     led_all_OFF();
