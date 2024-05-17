@@ -112,7 +112,7 @@ void display_profile(uint8_t profile) {
             break;
         case 4:
             ledON(&leds[1]);
-            ledON(&leds[2]);
+            ledON(&leds[2]);W
             break;
     }
     k_msleep(LEVEL_LED_SLEEP_PERIOD);

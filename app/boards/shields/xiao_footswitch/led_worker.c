@@ -6,8 +6,6 @@
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/layer_state_changed.h>
 
-
-
 void display_profile(uint8_t value);
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
