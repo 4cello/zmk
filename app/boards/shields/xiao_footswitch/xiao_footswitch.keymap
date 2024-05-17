@@ -39,7 +39,6 @@
 #define L7_HOLD     A
 #define L7_TAP      B
 
-#define TURBO_TIME_BETWEEN_PRESS 500
 #define HOLD_TIME 300
 
 &mt {
@@ -80,23 +79,6 @@
             #binding-cells = <0>;
             tapping-term-ms = <500>;
             bindings = <&bt_ht 0 0>, <&bt BT_SEL 1>, <&bt BT_SEL 2>, <&bt BT_SEL 3>, <&bt BT_SEL 4>;
-        };
-
-        // usage:  &ht_turbo 0 L0_TAP
-        turbo: turbo {
-            compatible = "zmk,behavior-turbo-key";
-            label = "TURBO";
-            #binding-cells = <0>;
-            bindings = <&kp L0_HOLD>;
-            wait-ms = <TURBO_TIME_BETWEEN_PRESS>;
-        };
-        ht_turbo: ht_turbo {
-            compatible = "zmk,behavior-hold-tap";
-            label = "HOLDTAP_TURBO";
-            #binding-cells = <2>;
-            tapping-term-ms = <HOLD_TIME>;
-            flavor = "hold-preferred";
-            bindings = <&turbo>, <&kp>;
         };
     };
 

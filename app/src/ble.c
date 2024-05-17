@@ -21,9 +21,7 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci_types.h>
 
-#include <drivers/hwinfo.h>
-
-#include <drivers/hwinfo.h>
+#include <zephyr/drivers/hwinfo.h>
 
 #if IS_ENABLED(CONFIG_SETTINGS)
 
@@ -644,27 +642,28 @@ static void bt_change_name(int err) {
         return;
     }
 
-    uint8_t * did = k_malloc(DEVICE_ID_SIZE);
+    uint8_t did[DEVICE_ID_SIZE]; // k_malloc(DEVICE_ID_SIZE);
     hwinfo_get_device_id(did, DEVICE_ID_SIZE);
 
-    char * device_name = k_calloc(DEVICE_NAME_MAX_LEN, sizeof(char));
-    sprintf(device_name, DEVICE_NAME_FORMAT, did[DEVICE_ID_SIZE-2], did[DEVICE_ID_SIZE-1]);
+    char device_name[DEVICE_NAME_MAX_LEN]; // k_calloc(DEVICE_NAME_MAX_LEN, sizeof(char));
+    sprintf(device_name, DEVICE_NAME_FORMAT, did[DEVICE_ID_SIZE - 2], did[DEVICE_ID_SIZE - 1]);
     int set_err = bt_set_name(device_name);
-    
+
     uint8_t device_name_length = 0;
-    for (char * c = device_name; c < device_name + DEVICE_NAME_MAX_LEN; c++) {
+    for (char *c = device_name; c < device_name + DEVICE_NAME_MAX_LEN; c++) {
         if (*c == 0) {
             break;
         }
         device_name_length++;
     }
-    LOG_DBG("Device name='%s', len=%d", device_name, device_name_length-1);
+    LOG_DBG("Device name='%s', len=%d", device_name, device_name_length - 1);
     if (set_err) {
         LOG_ERR("Failed to set device name (err %d)", set_err);
         return;
     }
 
-    const struct bt_data name_data = BT_DATA(BT_DATA_NAME_COMPLETE, device_name, device_name_length);
+    const struct bt_data name_data =
+        BT_DATA(BT_DATA_NAME_COMPLETE, device_name, device_name_length);
     zmk_ble_ad[0] = name_data;
     update_advertising();
 }

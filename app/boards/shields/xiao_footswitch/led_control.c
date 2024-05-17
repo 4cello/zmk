@@ -3,12 +3,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include <zephyr.h>
-#include <device.h>
-#include <devicetree.h>
-#include <drivers/gpio.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/gpio.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include <zmk/usb.h>
@@ -27,7 +27,6 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 struct led {
     const struct device *gpio_dev;
-    const char *gpio_dev_name;
     const char *gpio_pin_name;
     unsigned int gpio_pin;
     unsigned int gpio_flags;
@@ -39,7 +38,6 @@ enum { LED_R, LED_G, LED_B };
 struct led leds[] = {[LED_R] =
                          {
                              .gpio_dev = NULL,
-                             .gpio_dev_name = DT_GPIO_LABEL(LED_R_NODE, gpios),
                              .gpio_pin_name = DT_LABEL(LED_R_NODE),
                              .gpio_pin = DT_GPIO_PIN(LED_R_NODE, gpios),
                              .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_R_NODE, gpios),
@@ -47,14 +45,12 @@ struct led leds[] = {[LED_R] =
                      [LED_G] =
                          {
                              .gpio_dev = NULL,
-                             .gpio_dev_name = DT_GPIO_LABEL(LED_G_NODE, gpios),
                              .gpio_pin_name = DT_LABEL(LED_G_NODE),
                              .gpio_pin = DT_GPIO_PIN(LED_G_NODE, gpios),
                              .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_G_NODE, gpios),
                          },
                      [LED_B] = {
                          .gpio_dev = NULL,
-                         .gpio_dev_name = DT_GPIO_LABEL(LED_B_NODE, gpios),
                          .gpio_pin_name = DT_LABEL(LED_B_NODE),
                          .gpio_pin = DT_GPIO_PIN(LED_B_NODE, gpios),
                          .gpio_flags = GPIO_OUTPUT | DT_GPIO_FLAGS(LED_B_NODE, gpios),
@@ -63,10 +59,10 @@ struct led leds[] = {[LED_R] =
 static int led_init(const struct device *dev) {
     LOG_DBG("Initializing LEDs");
     for (int i = 0; i < (sizeof(leds) / sizeof(struct led)); i++) {
-        leds[i].gpio_dev = device_get_binding(leds[i].gpio_dev_name);
+        // leds[i].gpio_dev = device_get_binding(leds[i].gpio_dev_name);
         LOG_DBG("Initializing LED: %d: %s", i, leds[i].gpio_pin_name);
         if (leds[i].gpio_dev == NULL) {
-            printk("Error: didn't find %s device\n", leds[i].gpio_dev_name);
+            printk("Error: didn't find %s device\n", leds[i].gpio_pin_name);
             return -EIO;
         };
 
