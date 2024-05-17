@@ -21,6 +21,8 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/hci_types.h>
 
+#include <drivers/hwinfo.h>
+
 #if IS_ENABLED(CONFIG_SETTINGS)
 
 #include <zephyr/settings/settings.h>
@@ -62,12 +64,17 @@ enum advertising_type {
 static struct zmk_ble_profile profiles[ZMK_BLE_PROFILE_COUNT];
 static uint8_t active_profile;
 
+#define DEVICE_ID_SIZE 8
+#define DEVICE_NAME_MAX_LEN 32
+#define DEVICE_NAME_PREFIX CONFIG_BT_DEVICE_NAME
+#define DEVICE_NAME_FORMAT DEVICE_NAME_PREFIX " %02X%02X"
+
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 
 BUILD_ASSERT(DEVICE_NAME_LEN <= 16, "ERROR: BLE device name is too long. Max length: 16");
 
-static const struct bt_data zmk_ble_ad[] = {
+static struct bt_data zmk_ble_ad[] = {
     BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
     BT_DATA_BYTES(BT_DATA_GAP_APPEARANCE, 0xC1, 0x03),
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -629,8 +636,39 @@ static void zmk_ble_ready(int err) {
     update_advertising();
 }
 
-static int zmk_ble_init(void) {
-    int err = bt_enable(NULL);
+static void bt_change_name(int err) {
+    if (err) {
+        LOG_ERR("Bluetooth init failed (err %d)", err);
+        return;
+    }
+
+    uint8_t * did = k_malloc(DEVICE_ID_SIZE);
+    hwinfo_get_device_id(did, DEVICE_ID_SIZE);
+
+    char * device_name = k_calloc(DEVICE_NAME_MAX_LEN, sizeof(char));
+    sprintf(device_name, DEVICE_NAME_FORMAT, did[DEVICE_ID_SIZE-2], did[DEVICE_ID_SIZE-1]);
+    int set_err = bt_set_name(device_name);
+    
+    uint8_t device_name_length = 0;
+    for (char * c = device_name; c < device_name + DEVICE_NAME_MAX_LEN; c++) {
+        if (*c == 0) {
+            break;
+        }
+        device_name_length++;
+    }
+    LOG_DBG("Device name='%s', len=%d", device_name, device_name_length-1);
+    if (set_err) {
+        LOG_ERR("Failed to set device name (err %d)", set_err);
+        return;
+    }
+
+    const struct bt_data name_data = BT_DATA(BT_DATA_NAME_COMPLETE, device_name, device_name_length);
+    zmk_ble_ad[0] = name_data;
+    update_advertising();
+}
+
+static int zmk_ble_init(const struct device *_arg) {
+    int err = bt_enable(bt_change_name);
 
     if (err) {
         LOG_ERR("BLUETOOTH FAILED (%d)", err);

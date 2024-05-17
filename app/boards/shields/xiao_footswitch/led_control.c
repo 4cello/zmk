@@ -8,8 +8,6 @@
 #include <devicetree.h>
 #include <drivers/gpio.h>
 
-#include <bluetooth/services/bas.h>
-
 #include <logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -17,6 +15,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/battery_state_changed.h>
+
+/**
+ * LED Code is a slightly adapted version of ergodone's.
+ * https://github.com/ergodone/zmk/tree/kinesisble/app/boards/shields/kinesisble
+*/
 
 #define LED_R_NODE DT_NODELABEL(ledr)
 #define LED_G_NODE DT_NODELABEL(ledg)
@@ -30,9 +33,7 @@ struct led {
     unsigned int gpio_flags;
 };
 
-static void blink(const struct led *, uint32_t);
-void display_battery(void);
-void display_value(uint8_t value);
+void display_profile(uint8_t profile);
 
 enum { LED_R, LED_G, LED_B };
 struct led leds[] = {[LED_R] =
@@ -61,8 +62,10 @@ struct led leds[] = {[LED_R] =
                          }};
 
 static int led_init(const struct device *dev) {
+    LOG_DBG("Initializing LEDs");
     for (int i = 0; i < (sizeof(leds) / sizeof(struct led)); i++) {
         leds[i].gpio_dev = device_get_binding(leds[i].gpio_dev_name);
+        LOG_DBG("Initializing LED: %d: %s", i, leds[i].gpio_pin_name);
         if (leds[i].gpio_dev == NULL) {
             printk("Error: didn't find %s device\n", leds[i].gpio_dev_name);
             return -EIO;
@@ -80,12 +83,6 @@ static int led_init(const struct device *dev) {
 
 SYS_INIT(led_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 
-void blink(const struct led *led, uint32_t sleep_ms) {
-    gpio_pin_set(led->gpio_dev, led->gpio_pin, 1);
-    k_msleep(sleep_ms);
-    gpio_pin_set(led->gpio_dev, led->gpio_pin, 0);
-}
-
 static inline void ledON(const struct led *led) { gpio_pin_set(led->gpio_dev, led->gpio_pin, 1); }
 
 static inline void ledOFF(const struct led *led) { gpio_pin_set(led->gpio_dev, led->gpio_pin, 0); }
@@ -96,52 +93,27 @@ static void led_all_OFF() {
     }
 };
 
-#define BATTERY_LED_SLEEP_PERIOD 100
+#define LEVEL_LED_SLEEP_PERIOD 1000
 
-void display_battery(void) {
-    uint8_t level = bt_bas_get_battery_level();
-    if (level <= 10) {
-        for (int i = 0; i < 5; i++) {
-            blink(&leds[0], BATTERY_LED_SLEEP_PERIOD);
-            k_msleep(BATTERY_LED_SLEEP_PERIOD);
-        }
-    } else {
-        ledON(&leds[0]);
-        k_msleep(BATTERY_LED_SLEEP_PERIOD);
-        if (level > 20) {
+void display_profile(uint8_t profile) {
+    switch (profile) {
+        case 0:
+            ledON(&leds[0]);
+            break;
+        case 1:
             ledON(&leds[1]);
-            k_msleep(BATTERY_LED_SLEEP_PERIOD);
-        }
-        if (level > 40) {
+            break;
+        case 2:
             ledON(&leds[2]);
-            k_msleep(BATTERY_LED_SLEEP_PERIOD);
-        }
-        if (level > 80) {
-            ledON(&leds[3]);
-            k_msleep(BATTERY_LED_SLEEP_PERIOD);
-        }
-        k_msleep(BATTERY_LED_SLEEP_PERIOD);
-    }
-    led_all_OFF();
-}
-
-#define LEVEL_LED_SLEEP_PERIOD 500
-
-void display_value(uint8_t value) {
-    if (value > 3) {
-        ledON(&leds[3]);
-        value -= 4;
-    }
-    if (value > 2) {
-        ledON(&leds[2]);
-        value -= 3;
-    }
-    if (value > 1) {
-        ledON(&leds[1]);
-        value -= 2;
-    }
-    if (value > 0) {
-        ledON(&leds[0]);
+            break;
+        case 3:
+            ledON(&leds[0]);
+            ledON(&leds[1]);
+            break;
+        case 4:
+            ledON(&leds[1]);
+            ledON(&leds[2]);
+            break;
     }
     k_msleep(LEVEL_LED_SLEEP_PERIOD);
     led_all_OFF();
