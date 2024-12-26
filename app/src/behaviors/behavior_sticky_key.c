@@ -26,7 +26,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define KEY_PRESS DEVICE_DT_NAME(DT_INST(0, zmk_behavior_key_press))
 
-#define ZMK_BHV_STICKY_KEY_MAX_HELD 10
+#define ZMK_BHV_STICKY_KEY_MAX_HELD CONFIG_ZMK_BEHAVIOR_STICKY_KEY_MAX_HELD
 
 #define ZMK_BHV_STICKY_KEY_POSITION_FREE UINT32_MAX
 
@@ -40,6 +40,9 @@ struct behavior_sticky_key_config {
 
 struct active_sticky_key {
     uint32_t position;
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+    uint8_t source;
+#endif
     uint32_t param1;
     uint32_t param2;
     const struct behavior_sticky_key_config *config;
@@ -55,8 +58,8 @@ struct active_sticky_key {
 
 struct active_sticky_key active_sticky_keys[ZMK_BHV_STICKY_KEY_MAX_HELD] = {};
 
-static struct active_sticky_key *store_sticky_key(uint32_t position, uint32_t param1,
-                                                  uint32_t param2,
+static struct active_sticky_key *store_sticky_key(struct zmk_behavior_binding_event *event,
+                                                  uint32_t param1, uint32_t param2,
                                                   const struct behavior_sticky_key_config *config) {
     for (int i = 0; i < ZMK_BHV_STICKY_KEY_MAX_HELD; i++) {
         struct active_sticky_key *const sticky_key = &active_sticky_keys[i];
@@ -64,7 +67,10 @@ static struct active_sticky_key *store_sticky_key(uint32_t position, uint32_t pa
             sticky_key->timer_cancelled) {
             continue;
         }
-        sticky_key->position = position;
+        sticky_key->position = event->position;
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+        sticky_key->source = event->source;
+#endif
         sticky_key->param1 = param1;
         sticky_key->param2 = param2;
         sticky_key->config = config;
@@ -101,8 +107,11 @@ static inline int press_sticky_key_behavior(struct active_sticky_key *sticky_key
     struct zmk_behavior_binding_event event = {
         .position = sticky_key->position,
         .timestamp = timestamp,
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+        .source = sticky_key->source,
+#endif
     };
-    return behavior_keymap_binding_pressed(&binding, event);
+    return zmk_behavior_invoke_binding(&binding, event, true);
 }
 
 static inline int release_sticky_key_behavior(struct active_sticky_key *sticky_key,
@@ -115,10 +124,13 @@ static inline int release_sticky_key_behavior(struct active_sticky_key *sticky_k
     struct zmk_behavior_binding_event event = {
         .position = sticky_key->position,
         .timestamp = timestamp,
+#if IS_ENABLED(CONFIG_ZMK_SPLIT)
+        .source = sticky_key->source,
+#endif
     };
 
     clear_sticky_key(sticky_key);
-    return behavior_keymap_binding_released(&binding, event);
+    return zmk_behavior_invoke_binding(&binding, event, false);
 }
 
 static inline void on_sticky_key_timeout(struct active_sticky_key *sticky_key) {
@@ -149,7 +161,7 @@ static int on_sticky_key_binding_pressed(struct zmk_behavior_binding *binding,
         stop_timer(sticky_key);
         release_sticky_key_behavior(sticky_key, event.timestamp);
     }
-    sticky_key = store_sticky_key(event.position, binding->param1, binding->param2, cfg);
+    sticky_key = store_sticky_key(&event, binding->param1, binding->param2, cfg);
     if (sticky_key == NULL) {
         LOG_ERR("unable to store sticky key, did you press more than %d sticky_key?",
                 ZMK_BHV_STICKY_KEY_MAX_HELD);
@@ -188,9 +200,42 @@ static int on_sticky_key_binding_released(struct zmk_behavior_binding *binding,
     return ZMK_BEHAVIOR_OPAQUE;
 }
 
+#if IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+
+static int sticky_key_parameter_domains(const struct device *sk,
+                                        struct behavior_parameter_metadata *param_metadata) {
+    const struct behavior_sticky_key_config *cfg = sk->config;
+
+    struct behavior_parameter_metadata child_metadata;
+
+    int err = behavior_get_parameter_metadata(zmk_behavior_get_binding(cfg->behavior.behavior_dev),
+                                              &child_metadata);
+    if (err < 0) {
+        LOG_WRN("Failed to get the sticky key bound behavior parameter: %d", err);
+        return err;
+    }
+
+    for (int s = 0; s < child_metadata.sets_len; s++) {
+        const struct behavior_parameter_metadata_set *set = &child_metadata.sets[s];
+
+        if (set->param2_values_len > 0) {
+            return -ENOTSUP;
+        }
+    }
+
+    *param_metadata = child_metadata;
+
+    return 0;
+}
+
+#endif // IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+
 static const struct behavior_driver_api behavior_sticky_key_driver_api = {
     .binding_pressed = on_sticky_key_binding_pressed,
     .binding_released = on_sticky_key_binding_released,
+#if IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+    .get_parameter_metadata = sticky_key_parameter_domains,
+#endif // IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
 };
 
 static int sticky_key_keycode_state_changed_listener(const zmk_event_t *eh);
@@ -337,7 +382,7 @@ struct behavior_sticky_key_data {};
 static struct behavior_sticky_key_data behavior_sticky_key_data;
 
 #define KP_INST(n)                                                                                 \
-    static struct behavior_sticky_key_config behavior_sticky_key_config_##n = {                    \
+    static const struct behavior_sticky_key_config behavior_sticky_key_config_##n = {              \
         .behavior = ZMK_KEYMAP_EXTRACT_BINDING(0, DT_DRV_INST(n)),                                 \
         .release_after_ms = DT_INST_PROP(n, release_after_ms),                                     \
         .quick_release = DT_INST_PROP(n, quick_release),                                           \
